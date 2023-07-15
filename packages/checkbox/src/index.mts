@@ -29,6 +29,7 @@ type Config<Value> = {
   pageSize?: number;
   instructions?: string | boolean;
   message: string;
+  validate?: (value: Value[]) => boolean | string | Promise<string | boolean>;
   choices: ReadonlyArray<Choice<Value> | Separator>;
 };
 
@@ -52,15 +53,26 @@ export default createPrompt(
     const [cursorPosition, setCursorPosition] = useState(0);
     const [showHelpTip, setShowHelpTip] = useState(true);
 
-    useKeypress((key) => {
+    useKeypress(async (key) => {
       let newCursorPosition = cursorPosition;
       if (isEnterKey(key)) {
-        setStatus('done');
-        done(
-          choices
-            .filter((choice) => isSelectableChoice(choice) && choice.checked)
-            .map((choice) => (choice as Choice<Value>).value),
-        );
+        const answer = choices
+          .filter((choice) => isSelectableChoice(choice) && choice.checked)
+          .map((choice) => (choice as Choice<Value>).value);
+        setStatus('loading');
+
+        if (config.validate) {
+          const isValid = await config.validate(answer);
+          if (isValid) {
+            setStatus('done');
+            done(answer);
+          } else {
+            setStatus('pending');
+          }
+        } else {
+          setStatus('done');
+          done(answer);
+        }
       } else if (isUpKey(key) || isDownKey(key)) {
         const offset = isUpKey(key) ? -1 : 1;
         let selectedOption;
