@@ -29,7 +29,7 @@ type Config<Value> = {
   pageSize?: number;
   instructions?: string | boolean;
   message: string;
-  validate?: (value: Value[]) => boolean | string | Promise<string | boolean>;
+  validate?: (value: any) => boolean | string | Promise<string | boolean>;
   choices: ReadonlyArray<Choice<Value> | Separator>;
 };
 
@@ -61,18 +61,10 @@ export default createPrompt(
           .map((choice) => (choice as Choice<Value>).value);
         setStatus('loading');
 
-        if (config.validate) {
-          const isValid = await config.validate(answer);
-          if (isValid) {
-            setStatus('done');
-            done(answer);
-          } else {
-            setStatus('pending');
-          }
-        } else {
-          setStatus('done');
-          done(answer);
-        }
+        console.log(`FOO: ${config.validate}`);
+        const isValid = await config.validate(answer);
+        setStatus('done');
+        done(answer);
       } else if (isUpKey(key) || isDownKey(key)) {
         const offset = isUpKey(key) ? -1 : 1;
         let selectedOption;
